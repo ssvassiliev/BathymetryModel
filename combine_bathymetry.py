@@ -1,6 +1,7 @@
 #!/usr/bin/python	
 
-import shapefile, fiona, csv, math
+import shapefile, fiona, csv, math, numpy, scipy, timeit
+from scipy.spatial.distance import pdist, squareform
 
 # This script reads depth points from .csv and shape files, and 
 # combines them in a single shapefile. All files should be in
@@ -31,18 +32,55 @@ w.autobalance=1
 w.field("Depth", "F",10,5)
 x=[]; y=[]; z=[]; depth=[];
 
+def sq2cond(i, j, n):
+    assert i != j, "no diagonal elements in condensed matrix"
+    if i < j:
+        i, j = j, i
+    return n*j - j*(j+1)/2 + i - 1 - j
+
+def row_col_from_condensed_index(d,i):
+    b = 1 - 2*d 
+    x = math.floor((-b - math.sqrt(b*b - 8*i))*0.5)
+    g = i + x*(b + x + 2)*0.5 + 1 
+    return (x,g)  
+
+
+def vec_row_col(d,i):                                                               
+  b = 1 - 2* d
+  x = (numpy.floor((-b - numpy.sqrt(b*b - 8*i))*0.5)).astype(int)
+  g = (i + x*(b + x + 2)*0.5 + 1).astype(int)
+  if i.shape:                                                                     
+    return zip(x,g)                                                             
+  else:                                                                           
+    return (x,g) 
+
+
 # Read raw sounder data: File 1
 #--------------------------------------------------------
 bt = shapefile.Reader(InputFile1)
 bt_records = bt.shapeRecords()
 bt_shapes = bt.shapes()
+
+
 # depth is record #3 in the "opinicon_raw_gps"
 for i in range(0,len(bt_shapes)):
-   for k in range(0,len(bt_shapes[i].points)):
+   for k in range(0,len(bt_shapes[i].points)):       
        x.append(bt_shapes[i].points[k][0])
        y.append(bt_shapes[i].points[k][1])
        z.append(bt_records[i].record[3])
-print "1: Sounder data,",len(x),"depth points"
+
+print "1: Sounder data:",len(x),"depth points,",
+
+n=len(x);r=1.0
+XY=numpy.ndarray(shape=(n,2), dtype=float)
+for i in range(0,n):
+  XY[i,0]=x[i]
+  XY[i,1]=y[i]
+D = scipy.spatial.distance.pdist(XY, 'sqeuclidean')
+ix=numpy.where(D < r*r)
+rc=vec_row_col(n,ix[0])
+print len(rc), "pairs with separation <", r, "m"
+
 
 # Read depth measurements from csv file: File 2
 #--------------------------------------------------------
@@ -146,7 +184,7 @@ for i in range(0,len(x)):
   w.record(z[i]*zmult)
 for s in w.shapes():
   s.shapeType = ShapeType
-w.save(OutFile)
+#w.save(OutFile)
 
 # Write projection
 with fiona.open(InputFile1) as fp:
