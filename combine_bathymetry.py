@@ -9,7 +9,7 @@ from scipy.spatial.distance import pdist, squareform
 #-------------------------------------------------------------------
 # Required input:
 WorkDir="/home/svassili/OpiniconShp/OpiniconModelBuild/"
-InputFile1 = "Initial_Data/opinicon_raw_gps.shp"
+InputFile1 = "Initial_Data/opinicon_raw_gps_no_duplicates.shp"
 InputFile2 = "Initial_Data/20171021_location.csv"
 InputPerim = "Refined_Data/opinicon_perimeter_ed_simpl_0.4-2.shp"
 InputFile4 = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
@@ -54,6 +54,12 @@ def vec_row_col(d,i):
   else:                                                                           
     return (x,g) 
 
+def sqdistance(p1,p2):
+  import math
+  sqd = (x[p1]-x[p2])*(x[p1]-x[p2]) + (y[p1]-y[p2])*(y[p1]-y[p2]) 
+  return sqd
+
+
 
 # Read raw sounder data: File 1
 #--------------------------------------------------------
@@ -71,16 +77,58 @@ for i in range(0,len(bt_shapes)):
 
 print "1: Sounder data:",len(x),"depth points,",
 
-n=len(x);r=1.0
-XY=numpy.ndarray(shape=(n,2), dtype=float)
+# Compute distance matrix 
+n = len(x); r = 2.0; 
+XY = numpy.ndarray(shape = (n,2), dtype = float)
 for i in range(0,n):
-  XY[i,0]=x[i]
-  XY[i,1]=y[i]
+  XY[i,0] = x[i]
+  XY[i,1] = y[i]
 D = scipy.spatial.distance.pdist(XY, 'sqeuclidean')
-ix=numpy.where(D < r*r)
-rc=vec_row_col(n,ix[0])
-print len(rc), "pairs with separation <", r, "m"
+ix = numpy.where(D < r*r)
+rc = vec_row_col(n,ix[0])
+print len(rc), "groups with separation <", r, "m"
 
+# Make a list of point groups 
+cl=[];groups=[]
+pairs=list(rc)
+cl.append(pairs[0])
+for i in range(1,len(pairs)):
+    if pairs[i][0] == pairs[i-1][0]:
+       cl.append(pairs[i])
+    else:
+       groups.append(cl) 
+       cl=[]
+       cl.append(pairs[i])
+
+# Compute centroids and mark point for deletion
+cent_x=[]; cent_y=[]; cent_z=[]; g_i=[True]*n; i_done=[False]*n;
+xx=[]; yy=[]; zz=[]
+for i in range(0,len(groups)):
+    ii=groups[i][0][0]
+    if i_done[ii]:
+      continue
+    cx = x[ii]; cy = y[ii]; cz = z[ii]
+    g_i[ii]=False; i_done[ii]=True
+    for j in range(0,len(groups[i])):
+      ij=groups[i][j][1]
+      if i_done[ij]:
+        g_i[ii]=True  
+        continue
+      cx += x[ij]; cy += y[ij]; cz += z[ij]
+      g_i[ij]=False; i_done[ij]=True
+    div=(len(groups[i])+1) 
+    cent_x.append(cx/div); cent_y.append(cy/div); cent_z.append(cz/div)
+# Delete groups and replace them with centroids
+for i in range(0,n):
+   if g_i[i]:
+       xx.append(x[i])
+       yy.append(y[i])
+       zz.append(z[i])
+for i in range(0,len(cent_x)):
+    xx.append(cent_x[i])
+    yy.append(cent_y[i])
+    zz.append(cent_z[i])
+x=xx[:]; y=yy[:]; z=zz[:]
 
 # Read depth measurements from csv file: File 2
 #--------------------------------------------------------
@@ -184,7 +232,7 @@ for i in range(0,len(x)):
   w.record(z[i]*zmult)
 for s in w.shapes():
   s.shapeType = ShapeType
-#w.save(OutFile)
+w.save(OutFile)
 
 # Write projection
 with fiona.open(InputFile1) as fp:
