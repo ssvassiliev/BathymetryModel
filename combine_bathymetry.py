@@ -37,7 +37,6 @@ def add_points(bt,x,y,z):
     for j in range(0,len(bt_shapes[i].points)):
       tx=bt_shapes[i].points[j][0]
       ty=bt_shapes[i].points[j][1]
-      x.append(tx);y.append(ty); z.append(float(0.0))
       xt.append(tx); yt.append(ty);
     for k in range(0,len(xt)-1):
       if k == len(xt)-1:
@@ -116,6 +115,12 @@ except IOError:
 #-----------------------------------------------------------
 try:
   bt = shapefile.Reader(InputFile3)
+  bt_shapes = bt.shapes()
+  for i in range(0,len(bt_shapes)):
+    for j in range(0,len(bt_shapes[i].points)):
+      tx=bt_shapes[i].points[j][0]
+      ty=bt_shapes[i].points[j][1]
+      x.append(tx);y.append(ty); z.append(float(0))
   add_points(bt,x,y,z)
 except:
   pass
@@ -124,6 +129,14 @@ except:
 #-------------------------------------------------------
 try:
   bt = shapefile.Reader(InputFile4)
+  bt_shapes = bt.shapes()
+  bt_records = bt.shapeRecords()
+  for i in range(0,len(bt_shapes)):
+    for j in range(0,len(bt_shapes[i].points)):
+      tx=bt_shapes[i].points[j][0]
+      ty=bt_shapes[i].points[j][1]
+      tz=float(bt_records[i].record[0])
+      x.append(tx);y.append(ty); z.append(tz)
   add_points(bt,x,y,z)
 except:
   pass
