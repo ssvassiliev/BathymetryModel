@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 #--------------------------------------------------------------
 offDist = 1.0
 #----------------
-Depth = -0.5
+Depth = -0.25
 #----------------
 WorkDir = "/home/svassili/OpiniconShp/OpiniconModelBuild/"
 #InputFile = "Initial_Data/opinicon_perimeter_ed.shp"
