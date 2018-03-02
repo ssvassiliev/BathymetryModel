@@ -29,6 +29,35 @@ InputFile3 = WorkDir + InputFile3
 InputFile4 = WorkDir + InputFile4
 x=[]; y=[]; z=[]; depth=[];
 
+def add_points(bt,x,y,z):
+  np=len(x); nn=0  
+  bt_shapes = bt.shapes()
+  for i in range(0,len(bt_shapes)):
+    xt=[];yt=[]
+    for j in range(0,len(bt_shapes[i].points)):
+      tx=bt_shapes[i].points[j][0]
+      ty=bt_shapes[i].points[j][1]
+      x.append(tx);y.append(ty); z.append(float(0.0))
+      xt.append(tx); yt.append(ty);
+    for k in range(0,len(xt)-1):
+      if k == len(xt)-1:
+        dx=xt[0]-xt[k]; dy=yt[0]-yt[k]
+      else:
+        dx=xt[k+1]-xt[k]; dy=yt[k+1]-yt[k]
+      dist=math.sqrt(dx*dx+dy*dy)
+      idist=1/dist
+      dx=dx*idist; dy=dy*idist
+      if dist > space:
+        n=int(math.ceil(dist/space))
+        sp=dist/n
+        for l in range(0,n):
+          x.append(xt[k]+dx*l*sp)
+          y.append(yt[k]+dy*l*sp)
+          z.append(float(0.0))
+          nn=nn+1
+  print "3: Shoreline,",len(x)-np,"points,", nn, "points added" 
+  return(x,y,z) 
+
 # Read raw sounder data: File 1
 #-------------------------------------------------------------------
 print "Input:"
@@ -79,80 +108,25 @@ try:
 except IOError:
   pass
 
-# Read perimeter shape file: InputFile3
+# Read perimeter shape file: File3
 #-----------------------------------------------------------
 # This file does not have both z coordinate and Depth field, 
 # so we add them. We also add points on a straight line where 
 # distance between points is bigger than a predefined value
 #-----------------------------------------------------------
-
-np=len(x); nn=0
 try:
   bt = shapefile.Reader(InputFile3)
-  bt_records = bt.shapeRecords()
-  bt_shapes = bt.shapes()
-  for i in range(0,len(bt_shapes)):
-    xt=[];yt=[]
-    for j in range(0,len(bt_shapes[i].points)):
-      tx=bt_shapes[i].points[j][0]
-      ty=bt_shapes[i].points[j][1]
-      x.append(tx);y.append(ty); z.append(float(0.0))
-      xt.append(tx); yt.append(ty);
-    for k in range(0,len(xt)-1):
-      if k == len(xt)-1:
-        dx=xt[0]-xt[k]; dy=yt[0]-yt[k]
-      else:
-        dx=xt[k+1]-xt[k]; dy=yt[k+1]-yt[k]
-      dist=math.sqrt(dx*dx+dy*dy)
-      idist=1/dist
-      dx=dx*idist; dy=dy*idist
-      if dist > space:
-        n=int(math.ceil(dist/space))
-        sp=dist/n
-        for l in range(0,n):
-          x.append(xt[k]+dx*l*sp)
-          y.append(yt[k]+dy*l*sp)
-          z.append(float(0.0))
-          nn=nn+1
-  print "3: Shoreline,",len(x)-np,"points,", nn, "points added" 
+  add_points(bt,x,y,z)
 except:
   pass
 
 # Read perimeter parallel offset:  File 4 
 #-------------------------------------------------------
-np=len(x); nn=0
 try:
   bt = shapefile.Reader(InputFile4)
-  bt_records = bt.shapeRecords()
-  bt_shapes = bt.shapes()
-  for i in range(0,len(bt_shapes)):
-    xt=[];yt=[];zt=[]
-    for j in range(0,len(bt_shapes[i].points)):
-      tx=bt_shapes[i].points[j][0]
-      ty=bt_shapes[i].points[j][1]
-      tz=float(bt_records[i].record[0])
-      x.append(tx); y.append(ty); z.append(tz)
-      xt.append(tx); yt.append(ty); zt.append(tz)
-    for k in range(0,len(xt)-1):
-      if k == len(xt)-1:
-        dx=xt[0]-xt[k]; dy=yt[0]-yt[k]
-      else:
-        dx=xt[k+1]-xt[k]; dy=yt[k+1]-yt[k]
-      dist=math.sqrt(dx*dx+dy*dy)
-      idist=1/dist
-      dx=dx*idist; dy=dy*idist
-      if dist > space:
-        n=int(math.ceil(dist/space))
-        sp=dist/n
-        for l in range(0,n):
-           x.append(xt[k]+dx*l*sp)
-           y.append(yt[k]+dy*l*sp)
-           z.append(zt[k])
-           nn=nn+1
-  print "4: Shoreline offset,",len(x)-np,"points,", nn, "points added" 
+  add_points(bt,x,y,z)
 except:
   pass
-
 
 # write output shapefile and projection
 #--------------------------------------------------------
