@@ -1,25 +1,28 @@
 import scipy, numpy
-from scipy.spatial.distance import pdist, squareform  
+from scipy.spatial.distance import pdist  
+
+# merge data points separated by less than r in xy plane,
+# and replace them with average depth centroid 
 
 def merge_points(x,y,z,r):
   # Compute distance matrix 
   n = len(x);
   XY = numpy.ndarray(shape = (n,2), dtype = float)
   for i in range(0,n):
-    XY[i,0] = x[i]
-    XY[i,1] = y[i]
+    XY[i,0] = x[i]; XY[i,1] = y[i]
   D = scipy.spatial.distance.pdist(XY, 'sqeuclidean')
   ix = numpy.where(D < r*r)
   rc = vec_row_col(n,ix[0])
 
-  if len(rc) == 0: print "... merging complete with", n, "data points"; return 1
-  else:  print "...", len(rc), "pairs of close points"
+  if len(rc) == 0: 
+      print "... merging complete with", n, "data points"; return 1
+  else:  
+      print "...", len(rc), "pairs of close points"
  
   # Make a list of point groups 
-  cl=[]; groups=[]
-  pairs=list(rc)
+  cl = []; groups = []
+  pairs = list(rc)
   cl.append(pairs[0])
-  
   if len(pairs) == 1:
     groups.append(cl)
 
@@ -39,7 +42,6 @@ def merge_points(x,y,z,r):
       if i_done[ii]:
         continue
       else:
-        div = 1 
         cx = x[ii]; cy = y[ii]; cz = z[ii]
         g_i[ii]=False; i_done[ii]=True
       for j in range(0,len(groups[i])):
@@ -59,11 +61,15 @@ def merge_points(x,y,z,r):
   x += cent_x; y += cent_y; z += cent_z
   return(x,y,z)
 
+# convert square matrix to 1D condensed upper triangular form
 def sq2cond(i, j, n):
     assert i != j, "no diagonal elements in condensed matrix"
     if i < j:
         i, j = j, i
     return n*j - j*(j+1)/2 + i - 1 - j
+
+# convert condensed upper triangular matrix to 2D indices
+# d is matrix dimension, i is array of indices to convert 
 def vec_row_col(d,i):                                                               
   b = 1 - 2* d
   x = (numpy.floor((-b - numpy.sqrt(b*b - 8*i))*0.5)).astype(int)
@@ -72,7 +78,7 @@ def vec_row_col(d,i):
     return zip(x,g)                                                             
   else:                                                                           
     return (x,g) 
-def sqdistance(p1,p2):
-  import math
-  sqd = (x[p1]-x[p2])*(x[p1]-x[p2]) + (y[p1]-y[p2])*(y[p1]-y[p2]) 
-  return sqd
+
+def sqdistance(x,y,p1,p2):
+  return((x[p1]-x[p2])*(x[p1]-x[p2]) + (y[p1]-y[p2])*(y[p1]-y[p2])) 
+

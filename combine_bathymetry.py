@@ -11,37 +11,30 @@ import shapefile, fiona, csv, math, numpy
 WorkDir="/home/svassili/OpiniconShp/OpiniconModelBuild/"
 InputFile1 = "Initial_Data/opinicon_raw_gps_no_duplicates.shp"
 InputFile2 = "Initial_Data/20171021_location.csv"
-InputPerim = "Refined_Data/opinicon_perimeter_ed_simpl_0.4-2.shp"
+InputFile3 = "Refined_Data/opinicon_perimeter_ed_simpl_0.4-2.shp"
 InputFile4 = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
 OutFile = "opinicon_combined_bathymetry."
 # Fill gaps between points separated by distance bigger than: 
 space = 5.0;
 # Multiply z by:
 zmult = 20.0
-# Combine points separated by less than: 
+# Merge points separated by less than: 
 r = 1.0
 # Maximum allowed spike 
 maxh = 4.0
 #-------------------------------------------------------------------
 InputFile1 = WorkDir + InputFile1
 InputFile2 = WorkDir + InputFile2
-InputPerim = WorkDir + InputPerim
+InputFile3 = WorkDir + InputFile3
 InputFile4 = WorkDir + InputFile4
-
-print "Input:"
-# Initialize output shapefile
-ShapeType=shapefile.POINTZ
-w=shapefile.Writer(ShapeType)
-w.autobalance=1
-w.field("Depth", "F",10,5)
 x=[]; y=[]; z=[]; depth=[];
 
 # Read raw sounder data: File 1
-#--------------------------------------------------------
+#-------------------------------------------------------------------
+print "Input:"
 bt = shapefile.Reader(InputFile1)
 bt_records = bt.shapeRecords()
 bt_shapes = bt.shapes()
-
 # depth is record #3 in the "opinicon_raw_gps"
 for i in range(0,len(bt_shapes)):
    for k in range(0,len(bt_shapes[i].points)):       
@@ -54,7 +47,6 @@ print "1: Sounder data:",len(x),"depth points"
 xt = []; yt = []; zt = []
 print "... deleting spikes ..."
 print '{0:6} {1:8} {2:6}'.format("     #","     ID","Height")
-
 c=0
 for i in range(1,len(x)-1):
     h = min(z[i]-z[i-1], z[i]-z[i+1])
@@ -64,6 +56,8 @@ for i in range(1,len(x)-1):
     else:
         xt.append(x[i]); yt.append(y[i]); zt.append(z[i])
 x = xt[:]; y = yt[:]; z = zt[:]        
+
+# Merge closely spaced data points
 print "... Merging closely spaced data points ..."
 while True:
   try:  
@@ -85,7 +79,7 @@ try:
 except IOError:
   pass
 
-# Read perimeter shape file: InputPerim
+# Read perimeter shape file: InputFile3
 #-----------------------------------------------------------
 # This file does not have both z coordinate and Depth field, 
 # so we add them. We also add points on a straight line where 
@@ -94,7 +88,7 @@ except IOError:
 
 np=len(x); nn=0
 try:
-  bt = shapefile.Reader(InputPerim)
+  bt = shapefile.Reader(InputFile3)
   bt_records = bt.shapeRecords()
   bt_shapes = bt.shapes()
   for i in range(0,len(bt_shapes)):
@@ -159,8 +153,15 @@ try:
 except:
   pass
 
+
 # write output shapefile and projection
 #--------------------------------------------------------
+# Initialize output shapefile
+ShapeType=shapefile.POINTZ
+w=shapefile.Writer(ShapeType)
+w.autobalance=1
+w.field("Depth", "F",10,5)
+
 ShapeType=shapefile.POINTZ
 w=shapefile.Writer(ShapeType)
 w.autobalance=1
