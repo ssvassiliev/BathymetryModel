@@ -33,10 +33,10 @@ def add_points(bt,x,y,z):
   np=len(x); nn=0  
   bt_shapes = bt.shapes()
   for i in range(0,len(bt_shapes)):
-    xt=[];yt=[]
+    xt = [];yt = []
     for j in range(0,len(bt_shapes[i].points)):
-      tx=bt_shapes[i].points[j][0]
-      ty=bt_shapes[i].points[j][1]
+      tx = bt_shapes[i].points[j][0]
+      ty = bt_shapes[i].points[j][1]
       xt.append(tx); yt.append(ty);
     for k in range(0,len(xt)-1):
       if k == len(xt)-1:
@@ -53,8 +53,8 @@ def add_points(bt,x,y,z):
           x.append(xt[k]+dx*l*sp)
           y.append(yt[k]+dy*l*sp)
           z.append(float(0.0))
-          nn=nn+1
-  print "3: Shoreline,",len(x)-np,"points,", nn, "points added" 
+          nn += 1
+  print nn, "points added" 
   return(x,y,z) 
 
 # Read raw sounder data: File 1
@@ -114,6 +114,7 @@ except IOError:
 # distance between points is bigger than a predefined value
 #-----------------------------------------------------------
 try:
+  np=len(x)  
   bt = shapefile.Reader(InputFile3)
   bt_shapes = bt.shapes()
   for i in range(0,len(bt_shapes)):
@@ -121,6 +122,7 @@ try:
       tx=bt_shapes[i].points[j][0]
       ty=bt_shapes[i].points[j][1]
       x.append(tx);y.append(ty); z.append(float(0))
+  print "3: Perimeter,", len(x) - np, "points",    
   add_points(bt,x,y,z)
 except:
   pass
@@ -128,6 +130,7 @@ except:
 # Read perimeter parallel offset:  File 4 
 #-------------------------------------------------------
 try:
+  np=len(x)  
   bt = shapefile.Reader(InputFile4)
   bt_shapes = bt.shapes()
   bt_records = bt.shapeRecords()
@@ -137,6 +140,7 @@ try:
       ty=bt_shapes[i].points[j][1]
       tz=float(bt_records[i].record[0])
       x.append(tx);y.append(ty); z.append(tz)
+  print "4: P. offset,", len(x) - np, "points",  
   add_points(bt,x,y,z)
 except:
   pass
