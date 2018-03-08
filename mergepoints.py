@@ -1,9 +1,10 @@
 import scipy, numpy
 from scipy.spatial.distance import pdist  
 
-# merge data points separated by less than r in xy plane,
-# and replace them with average depth centroid 
-
+# Merge data points separated by less than r in xy plane, and
+# replace them with average depth centroid. If merging successful
+# returns arrays (x,y,z), if no merging was done returns 1.
+#----------------------------------------------------------------
 def merge_points(x,y,z,r):
   # Compute distance matrix 
   n = len(x);
@@ -77,8 +78,10 @@ def vec_row_col(d,i):
   if i.shape:                                                                     
     return zip(x,g)                                                             
   else:                                                                           
-    return (x,g) 
-
+    return (x,g)
+  
+# Compute squared Euclidean distance between points with indexes
+# p1 and p2 from coordinate arrays (x,y)
 def sqdistance(x,y,p1,p2):
   return((x[p1]-x[p2])*(x[p1]-x[p2]) + (y[p1]-y[p2])*(y[p1]-y[p2])) 
 
