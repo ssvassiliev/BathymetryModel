@@ -14,8 +14,6 @@ InputFile2 = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
 OutFile = "opinicon_perim_&_offset."
 # Fill gaps between points separated by distance bigger than: 
 space = 5.0;
-# Multiply z by:
-zmult = 20.0
 # Merge points separated by less than: 
 r = 1.0
 # Maximum allowed spike 
@@ -23,8 +21,6 @@ maxh = 4.0
 #-------------------------------------------------------------------
 InputFile1 = WorkDir + InputFile1
 InputFile2 = WorkDir + InputFile2
-InputFile3 = WorkDir + InputFile3
-InputFile4 = WorkDir + InputFile4
 x=[]; y=[]; z=[]; depth=[];
 
 # add_points function takes data points from shapefile reader object
@@ -61,7 +57,7 @@ def add_points(bt,x,y,z,ii,ind,spacing):
         for l in range(1,n):
           x.append(tx1+dx*l*sp)
           y.append(ty1+dy*l*sp)
-          z.append(z[j])
+          z.append(tz1)
           n_added += 1
     ind.append(n_prev+n_read+n_added)
   print n_read, "points",  
@@ -106,7 +102,7 @@ vcount=0
 for i in range(0,len(ind)-1):
   vertex=[] 
   for j in range(ind[i],ind[i+1]):
-    vertex.append([x[j], y[j], z[j]*zmult, 0])
+    vertex.append([x[j], y[j], z[j], 0])
     vcount += 1
   w.record(i)
   w.line([vertex])
