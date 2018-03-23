@@ -1,7 +1,9 @@
-#!/usr/bin/python	
+#!/usr/bin/python
+import scipy, numpy
+from scipy.spatial.distance import cdist  
 from mergepoints import merge_points, sqdistance
 from stl import mesh
-import shapefile, fiona, csv, math, numpy, os, sys
+import shapefile, fiona, csv, math, numpy, scipy, os, sys
 
 # This script reads depth points from csv and shape files, and 
 # combines them in a single shapefile. All files should be in
@@ -9,7 +11,8 @@ import shapefile, fiona, csv, math, numpy, os, sys
 #-------------------------------------------------------------------
 # Required input:
 WorkDir="/home/svassili/OpiniconShp/OpiniconModelBuild/"
-PerimeterFile = "Refined_Data/opinicon_perim_&_offset.dbf"
+PerimeterFile = "Refined_Data/opinicon_perim_&_offset_2.shp"
+#PerimeterFile = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
 SounderFile1 = "Initial_Data/opinicon_raw_gps_no_duplicates.shp"
 csvFile1 = "Initial_Data/20171021_location.csv"
 OutFile = "opinicon_combined_bathymetry."
@@ -21,12 +24,18 @@ zmult = 40.0
 r = 1.0
 # Maximum iterrations
 ntries = 20
-# Moving average distance 
+# Moving average over a distance 
 n_av = 20.0
-# Maximum allowed depth peak height.
+# Maximum allowed peak height.
 # Positive and negative peaks with h < maxh and width = 1
 # will be replaced by average of z[i-1] and z[i+1]
 maxh = 1.0
+# Triangulation options: http://dzhelil.info/triangle/
+tri = 'pq20'
+# Inverse distance interpolation:
+invp = 3  # power
+intn = 40 # number of nearest neighbours 
+
 print "\nMinimal allowed points separation =", r
 print "Moving average distance =", n_av
 print "Maximum allowed peak height =",maxh
@@ -60,7 +69,8 @@ for i in nShapes:
    hx /= n; hy /= n
    holes.append([hx,hy])
    z += sh_shapes[i].z
-print "\n<<< Reading perimeter >>>\n", os.path.basename(file)+",", len(x), "points\n"  
+print "\n<<< Reading perimeter >>>\n", os.path.basename(file)+",", len(x), "points"
+print "min =", min(z), "max = ", max(z), "\n"
 #------------------------------------------------------------
 # <<<<<<<<<<<<<<<< Read raw sounder data: >>>>>>>>>>>>>>>>>> 
 #------------------------------------------------------------
@@ -78,8 +88,8 @@ for i in range(len(bt_shapes)):
        zt.append(bt_records[i].record[3])
 print "<<< Reading sounder data >>>\n", os.path.basename(file)+",", len(xt),"points\n" 
 # Find and delete outliers
-print "<<< Deleting spikes >>>"
-print '{0:6} {1:8} {2:6}'.format("     #","     ID","Height+ " "Height-")
+print "<<< Removing outliers >>>"
+# print '{0:6} {1:8} {2:6}'.format("     #","     ID","Height+ " "Height-")
 c=0
 for i in range(1,len(xt)-1):
    # spikes
@@ -88,12 +98,12 @@ for i in range(1,len(xt)-1):
     g = min(-zt[i]+zt[i-1], -zt[i]+zt[i+1])   
     if h > maxh or g > maxh:
         c+=1
-        print '{0:6} {1:8} {2:7} {3:7}'.format(c,i,h,g)
+#        print '{0:6} {1:8} {2:7} {3:7}'.format(c,i,h,g)
         x2.append(xt[i]); y2.append(yt[i]);
         z2.append((zt[i+1]+zt[i-1])*0.5)    
     else:
         x2.append(xt[i]); y2.append(yt[i]); z2.append(zt[i])
-
+print "... removed",c,"outliers" 
 # Moving average over a distance n_av
 print "\n<<< Computing moving average >>>" 
 n_av *= n_av
@@ -149,24 +159,25 @@ except IOError:
 #---------------------------------------------------------
 import triangle
 import triangle.plot
-print "<<< Constrained conforming Delaunay triangulation >>>"   
-print "... this may take a while ...\n"
-# Build array of segments
+print "<<< Constrained conforming Delaunay triangulation >>>\n"   
+# segments from offset lines
 nPoly=len(nShapes)/2
-for i in range(nPoly):
+# offset line segments: 
+for i in range(len(nShapes)/2, len(nShapes)):
    for j in range(ind[i],ind[i+1]-1):
       segments.append([j,j+1]) 
-   segments.append([j+1,ind[i]])   
+   segments.append([j+1,ind[i]])
+ns=len(segments)
+SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
+for i in range(ns):
+   SEGM[i,0] = segments[i][0]; SEGM[i,1] = segments[i][1]; 
+
 # vertices
 ns=len(x)       
 XY_S = numpy.ndarray(shape = (ns,2), dtype = float)
 for i in range(ns):
    XY_S[i,0] = x[i]; XY_S[i,1] = y[i]; 
-#segments
-ns=len(segments)
-SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
-for i in range(ns):
-   SEGM[i,0] = segments[i][0]; SEGM[i,1] = segments[i][1]; 
+
 # number of holes (islands)
 ns=nPoly-1
 # perimeter comes first, so we skip it
@@ -176,23 +187,44 @@ for i in range(ns):
    HOLES[i,0] = holes[i][0]; HOLES[i,1] = holes[i][1]; 
 
 A = dict(vertices=XY_S, segments=SEGM, holes=HOLES)
-B = triangle.triangulate(A,'pq0')
+B = triangle.triangulate(A,tri)
+
 #----------------------------------------------------
 # <<<<<<<<<<<<<<<<< Write stl files >>>>>>>>>>>>>>>>>
 #----------------------------------------------------
 ns=len(x)
 na = len(B['vertices'])
+
 # the existing vertices
 vrtb = numpy.ndarray(shape = (na,3), dtype = float)
 vrtt = numpy.ndarray(shape = (na,3), dtype = float)
+rpt = numpy.ndarray(shape = (1,2), dtype = float)
+
 for i in range(ns):
-   vrtb[i,0] = x[i]; vrtb[i,1] = y[i]; vrtb[i,2] = z[i]*zmult;
-   vrtt[i,0] = x[i]; vrtt[i,1] = y[i]; vrtt[i,2] = 0.0;
-# the new vertices
-for i in range(ns,na):
-   vrtb[i,0] = vrtt[i,0] = B['vertices'][i][0];   
-   vrtb[i,1] = vrtt[i,1] = B['vertices'][i][1];
-   vrtb[i,2] = vrtt[i,2] = 0.0;
+   vrtb[i,0] = x[i]; vrtb[i,1] = y[i]; vrtb[i,2] = z[i]*zmult; # bottom surface
+   vrtt[i,0] = x[i]; vrtt[i,1] = y[i]; vrtt[i,2] = 0.0;  # top surface
+       
+print "<<< Inverse distance interpolation >>>"
+print "... interpolating depth of", na-ns, "vertices ..."
+print "... this may take a while ...\n"
+
+# Interpolate depth of the new points using inverse distance algorithm
+for j in range(ns,na):
+   # the new vertices
+   vrtb[j,0] = vrtt[j,0] = B['vertices'][j][0];   
+   vrtb[j,1] = vrtt[j,1] = B['vertices'][j][1];
+   vrtt[j,2] = 0.0;  
+   rpt[0][0] = vrtb[j,0]; rpt[0][1] = vrtb[j,1];  
+   dist = scipy.spatial.distance.cdist(rpt,XY_S,'sqeuclidean')
+   ds = numpy.argsort(dist)
+   wu=[]; sm = 0; mu = 0
+   for k in range(intn):
+     di = math.sqrt(dist[0][ds[0][k]])
+     wu.append(pow(di,-invp))
+     sm += wu[k]
+     mu += z[ds[0][k]]*wu[k]
+   vrtb[j,2] = mu*zmult/sm
+   
 # the faces (triangles)
 faces = B['triangles']
 # Create meshes
@@ -200,13 +232,39 @@ bottom_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
 for i, f in enumerate(faces):
     for j in range(3):
         bottom_msh.vectors[i][j] = vrtb[f[j],:]
+        
 top_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
 for i, f in enumerate(faces):
     for j in range(3):
         top_msh.vectors[i][j] = vrtt[f[j],:]
 # Write meshes to files
-bottom_msh.save('bottom_mesh.stl')
-top_msh.save('top_mesh.stl')
+bottom_msh.save('bottom_mesh_.stl')
+top_msh.save('top_mesh_.stl')
+
+#----------------------------------------------------
+# <<<<<<< Write out vertices, segments, holes >>>>>>>
+with open('vertices.csv', 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(vrtb)
+segments=[]
+# Build array of segments from zero lines
+for i in range(nPoly):
+   for j in range(ind[i],ind[i+1]-1):
+      segments.append([j,j+1]) 
+   segments.append([j+1,ind[i]])    
+ns=len(segments)
+SEGM2 = numpy.ndarray(shape = (ns,2), dtype = int)
+for i in range(ns):
+   SEGM2[i,0] = segments[i][0]; SEGM2[i,1] = segments[i][1]; 
+    
+with open('segments.csv', 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(SEGM2)
+with open('holes.csv', 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(HOLES)
+    
+    
 #----------------------------------------------------------
 # <<<<<<<< Write output shapefile and projection >>>>>>>>>>
 #----------------------------------------------------------
