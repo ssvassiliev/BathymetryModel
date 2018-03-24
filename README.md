@@ -3,6 +3,14 @@ This is a set of scripts performing data cleanup, interpolation and triangulatio
 
 ## Workflow:
 
+### Before you start building model ### 
+
+Clean up zero lines. In many cases the number of data points can be significantly reduced without sacrificing much of a quality. ArcMap can be used for this job.
+
+Check for duplicates and remove them from bathymetry data. There was a lot of duplicates in the raw data for L.Opinicon. I used QGIS plugin MMQGIS for this. 
+
+Make sure that bathymetry data points **do not cross zero or offset lines**. This is very important for quality mesh generation.  Consider moving zero lines or bathymetry points depending on what you trust more.
+
 ### Step 1 <parallel_offset.py>  generate lines parallel to a waterfront (zero lines).  
 Lines in a water body offset by a short distance from zero lines are required to ensure correct water perimeter outline. This script generates a set of polylines  parallel to all input polylines found in the input ESRI shapefile. The lines are generated at the distance offDist from the input line, inside or outside of the input polygons. The output is in  ESRI polyline Z format where Z is (constant) depth. In addition depth is also saved in the record #1 "Depth".
 
