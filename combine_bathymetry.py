@@ -219,7 +219,7 @@ for j in range(ns,na):
    ds = numpy.argsort(dist)
    sm = 0; mu = 0
    for k in range(intn):
-      if abs(z[ds[0][k]]) > 1e-8 : # exclude zero lines
+      if abs(z[ds[0][k]]) > 1e-8 : # exclude zero lines from IDW
         di = math.sqrt(dist[0][ds[0][k]])
         wu = pow(di,-invp)
         sm += wu
