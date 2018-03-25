@@ -33,8 +33,8 @@ maxh = 1.0
 # Triangulation options: http://dzhelil.info/triangle/
 tri = 'pq20'
 # Inverse distance interpolation:
-invp = 3  # power
-intn = 40 # number of nearest neighbours 
+invp = 2  # power
+intn = 20 # number of nearest neighbours 
 
 print "\nMinimal allowed points separation =", r
 print "Moving average distance =", n_av
@@ -217,12 +217,13 @@ for j in range(ns,na):
    rpt[0][0] = vrtb[j,0]; rpt[0][1] = vrtb[j,1];  
    dist = scipy.spatial.distance.cdist(rpt,XY_S,'sqeuclidean')
    ds = numpy.argsort(dist)
-   wu=[]; sm = 0; mu = 0
+   sm = 0; mu = 0
    for k in range(intn):
-     di = math.sqrt(dist[0][ds[0][k]])
-     wu.append(pow(di,-invp))
-     sm += wu[k]
-     mu += z[ds[0][k]]*wu[k]
+      if abs(z[ds[0][k]]) > 1e-8 : # exclude zero lines
+        di = math.sqrt(dist[0][ds[0][k]])
+        wu = pow(di,-invp)
+        sm += wu
+        mu += z[ds[0][k]]*wu
    vrtb[j,2] = mu*zmult/sm
    
 # the faces (triangles)
