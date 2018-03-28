@@ -1,35 +1,20 @@
 #!/usr/bin/python
-import scipy, numpy
-from scipy.spatial.distance import cdist  
-from mergepoints import merge_points, sqdistance
-from stl import mesh
-import shapefile, fiona, csv, math, numpy, scipy, os, sys
 
-#---------------------------------------------------------
-# <<<<<< Triangulate Planar Straight Line Graph >>>>>>>>>
-#---------------------------------------------------------
+from stl import mesh
+import csv, math, numpy, sys
 import triangle
 import triangle.plot
 
-print "<<< Constrained conforming Delaunay triangulation >>>\n"   
-#----------------------------------------------------
-# <<<<<<< read vertices, segments, holes >>>>>>>
+#---------------------------------------------------------
+# This round of triangulation is designed to extend lake
+# bounds to zero lines and optionally extrude zero lines
+# to enhance printed walls
+#---------------------------------------------------------
+# Make holes in the place of islands?
+makeHoles = False
+extrudeWalls = True
 
-# read segments
-segments=[]
-file = 'segments.csv'
-try:
-  with open(file) as csvDataFile:
-    csvReader = csv.reader(csvDataFile)
-    for row in csvReader:
-      segments.append([int(row[0]),int(row[1])])
-except IOError:
-  pass
-ns=len(segments)
-SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
-for i in range(ns):
-   SEGM[i,0] = segments[i][0]; SEGM[i,1] = segments[i][1]; 
-
+print "<<< Reading holes >>>"
 # read holes
 holes=[]
 file = 'holes.csv'
@@ -39,13 +24,14 @@ try:
     for row in csvReader:
       holes.append([float(row[0]),float(row[1])])
 except IOError:
-  pass   
+  print 'Error: file',file,'not found'
+  raise SystemExit   
 ns=len(holes)
 HOLES = numpy.ndarray(shape = (ns,2), dtype = float)
 for i in range(ns):
    HOLES[i,0] = holes[i][0]; HOLES[i,1] = holes[i][1]; 
 
-
+print "<<< Reading vertices >>>"
 # read vertices
 vertices=[]
 file = 'vertices.csv'
@@ -55,38 +41,97 @@ try:
     for row in csvReader:
       vertices.append([float(row[0]),float(row[1]),float(row[2])])
 except IOError:
-  pass   
-ns=len(vertices)  
+  print 'Error: file',file,'not found'
+  raise SystemExit
+n1=len(vertices)
+print "... Number of vertices:", n1
+
+if extrudeWalls:
+   # read extruded wall (for printing)
+   print "<<< Reading extuded vertices >>>"
+
+   file = 'vertices_ext.csv'
+   try:
+     with open(file) as csvDataFile:
+       csvReader = csv.reader(csvDataFile)
+       for row in csvReader:
+         vertices.append([float(row[0]),float(row[1]),float(row[2])])
+   except IOError:
+     print 'Error: file',file,'not found'
+     raise SystemExit
+ns=len(vertices)
+print "... Number of vertices:", ns
+
 XY = numpy.ndarray(shape = (ns,2), dtype = float)
 for i in range(ns):
-   XY[i,0] = vertices[i][0]; XY[i,1] = vertices[i][1]; 
-   
-A = dict(vertices=XY, segments=SEGM, holes=HOLES)
-B = triangle.triangulate(A,'pq0')
+   XY[i,0] = vertices[i][0]; XY[i,1] = vertices[i][1];
 
-ns=len(B['vertices'])
-vrtb = numpy.ndarray(shape = (ns,3), dtype = float)
-vrtt = numpy.ndarray(shape = (ns,3), dtype = float)
-for i in range(ns-1):
+# read segments
+print "<<< Reading segments >>>"
+segments=[]
+file = 'segments.csv'
+try:
+  with open(file) as csvDataFile:
+    csvReader = csv.reader(csvDataFile)
+    for row in csvReader:
+      segments.append([int(row[0]),int(row[1])])
+except IOError:
+  print 'Error: file',file,'not found'
+  raise SystemExit
+
+# extra wall vertices
+print "<<< Extruding outer wall for printing >>>"
+for i in range(n1,ns-1):
+   segments.append([i,i+1])
+segments.append([i+1,n1])
+ns=len(segments)
+SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
+for i in range(ns):
+   SEGM[i,0] = segments[i][0]; SEGM[i,1] = segments[i][1]; 
+
+print "<<< Constrained conforming Delaunay triangulation >>>"   
+#----------------------------------------------------
+# triangulate
+if makeHoles:
+   A = dict(vertices=XY, segments=SEGM, holes=HOLES)
+else:   
+   A = dict(vertices=XY, segments=SEGM)
+B = triangle.triangulate(A,'pq10')
+print "done"
+# prepare 3D verices by adding z coordinate
+na=len(B['vertices'])
+vrtb = numpy.ndarray(shape = (na,3), dtype = float)
+vrtt = numpy.ndarray(shape = (na,3), dtype = float)
+
+#old vertices
+for i in range(n1):
    vrtb[i,0] = vrtt[i,0] = B['vertices'][i][0]
    vrtb[i,1] = vrtt[i,1] = B['vertices'][i][1]
    vrtb[i,2] = vertices[i][2]; vrtt[i,2] = 0.0
-
-   vrtb[ns-1,0] = vrtt[ns-1,0] = B['vertices'][ns-1][0]
-   vrtb[ns-1,1] = vrtt[ns-1,1] = B['vertices'][ns-1][1]
-   vrtb[ns-1,2] = 0.0; vrtt[ns-1,2] = 0.0
+#new vertices
+for i in range(n1,na):
+   vrtb[i,0] = vrtt[i,0] = B['vertices'][i][0]
+   vrtb[i,1] = vrtt[i,1] = B['vertices'][i][1]
+   vrtb[i,2] = vrtt[i,2] = 0.0
+   
+# <<<<<<<<<<<<<    Center objects    >>>>>>>>>>>>>>
+#----------------------------------------------------------
+print "<<< Centering meshes >>>"
+center = numpy.mean(vrtb, 0)
+center[2]=0.0
+print "... Coordinates of the geometric center:\n","...", center, "\n"
+vrtb = vrtb - center
+vrtt = vrtt - center
+HOLES = HOLES - center[[0,1]]
 
 # the faces (triangles)
 faces = B['triangles']
 # Create meshes
+top_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
 bottom_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
 for i, f in enumerate(faces):
     for j in range(3):
         bottom_msh.vectors[i][j] = vrtb[f[j],:]
-        
-top_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
-for i, f in enumerate(faces):
-    for j in range(3):
         top_msh.vectors[i][j] = vrtt[f[j],:]
 # Write meshes to files
 bottom_msh.save('bottom_mesh.stl')

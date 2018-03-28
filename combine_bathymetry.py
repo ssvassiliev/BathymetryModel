@@ -31,10 +31,10 @@ n_av = 20.0
 # will be replaced by average of z[i-1] and z[i+1]
 maxh = 1.0
 # Triangulation options: http://dzhelil.info/triangle/
-tri = 'pq20'
+tri = 'pq10'
 # Inverse distance interpolation:
 invp = 2  # power
-intn = 20 # number of nearest neighbours 
+intn = 10 # number of nearest neighbours 
 
 print "\nMinimal allowed points separation =", r
 print "Moving average distance =", n_av
@@ -82,10 +82,18 @@ bt_shapes = bt.shapes()
 xt = []; yt = []; zt = []
 x2 = []; y2 = []; z2 = []
 for i in range(len(bt_shapes)):
-   for k in range(len(bt_shapes[i].points)):       
+   for k in range(len(bt_shapes[i].points)):
        xt.append(bt_shapes[i].points[k][0])
        yt.append(bt_shapes[i].points[k][1])
        zt.append(bt_records[i].record[3])
+
+#---------------------------------------
+#<<<<< remove suspicious points >>>>>> 
+i1=15993;ni=33
+for i in range(ni):
+  del xt[i1]; del yt[i1]; del zt[i1]
+#---------------------------------------
+
 print "<<< Reading sounder data >>>\n", os.path.basename(file)+",", len(xt),"points\n" 
 # Find and delete outliers
 print "<<< Removing outliers >>>"
@@ -154,6 +162,18 @@ try:
    int(csvReader.line_num)-1,"depth points\n"
 except IOError:
   pass
+
+
+#------------------------------------------------------------
+#<<<<<<<<<<<<<<< Add bounding box >>>>>>>>>>>>>>>>>>>
+#marg=100
+#x1=min(x);x2=max(x);y1=min(y);y2=max(y)
+#x.append(x1-marg);y.append(y1-marg);z.append(0.0)
+#x.append(x1-marg);y.append(y2+marg);z.append(0.0)
+#x.append(x2+marg);y.append(y2+marg);z.append(0.0)
+#x.append(x2+marg);y.append(y1-marg);z.append(0.0)
+#------------------------------------------------------------
+
 #---------------------------------------------------------
 # <<<<<< Triangulate Planar Straight Line Graph >>>>>>>>>
 #---------------------------------------------------------
@@ -167,6 +187,7 @@ for i in range(len(nShapes)/2, len(nShapes)):
    for j in range(ind[i],ind[i+1]-1):
       segments.append([j,j+1]) 
    segments.append([j+1,ind[i]])
+   
 ns=len(segments)
 SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
 for i in range(ns):
@@ -176,8 +197,7 @@ for i in range(ns):
 ns=len(x)       
 XY_S = numpy.ndarray(shape = (ns,2), dtype = float)
 for i in range(ns):
-   XY_S[i,0] = x[i]; XY_S[i,1] = y[i]; 
-
+   XY_S[i,0] = x[i]; XY_S[i,1] = y[i];    
 # number of holes (islands)
 ns=nPoly-1
 # perimeter comes first, so we skip it
@@ -190,25 +210,25 @@ A = dict(vertices=XY_S, segments=SEGM, holes=HOLES)
 B = triangle.triangulate(A,tri)
 
 #----------------------------------------------------
-# <<<<<<<<<<<<<<<<< Write stl files >>>>>>>>>>>>>>>>>
+# <<<<<<<<<< Prepare to write stl files >>>>>>>>>>>>
 #----------------------------------------------------
 ns=len(x)
 na = len(B['vertices'])
 
-# the existing vertices
+# declare arrays for vertices
 vrtb = numpy.ndarray(shape = (na,3), dtype = float)
 vrtt = numpy.ndarray(shape = (na,3), dtype = float)
 rpt = numpy.ndarray(shape = (1,2), dtype = float)
-
+# fill arrays with existing data 
 for i in range(ns):
    vrtb[i,0] = x[i]; vrtb[i,1] = y[i]; vrtb[i,2] = z[i]*zmult; # bottom surface
    vrtt[i,0] = x[i]; vrtt[i,1] = y[i]; vrtt[i,2] = 0.0;  # top surface
-       
+   
+# Interpolate depth of the new points using inverse distance algorithm       
 print "<<< Inverse distance interpolation >>>"
 print "... interpolating depth of", na-ns, "vertices ..."
 print "... this may take a while ...\n"
 
-# Interpolate depth of the new points using inverse distance algorithm
 for j in range(ns,na):
    # the new vertices
    vrtb[j,0] = vrtt[j,0] = B['vertices'][j][0];   
@@ -224,11 +244,16 @@ for j in range(ns,na):
         wu = pow(di,-invp)
         sm += wu
         mu += z[ds[0][k]]*wu
-   vrtb[j,2] = mu*zmult/sm
+   if sm != 0.0:     
+        vrtb[j,2] = mu*zmult/sm
+   else:
+        vrtb[j,2] = 0.0
    
 # the faces (triangles)
 faces = B['triangles']
-# Create meshes
+
+# <<<<<<<<< Create meshes >>>>>>>>>>
+#-------------------------------------------------------------
 bottom_msh = mesh.Mesh(numpy.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
 for i, f in enumerate(faces):
     for j in range(3):
@@ -252,7 +277,15 @@ segments=[]
 for i in range(nPoly):
    for j in range(ind[i],ind[i+1]-1):
       segments.append([j,j+1]) 
-   segments.append([j+1,ind[i]])    
+   segments.append([j+1,ind[i]])
+#---------------------------------   
+# <<< Append bounding box >>>
+#ns=len(x)
+#segments.append([ns-1,ns-2])
+#segments.append([ns-2,ns-3])
+#segments.append([ns-3,ns-4])
+#segments.append([ns-1,ns-4])
+#---------------------------------
 ns=len(segments)
 SEGM2 = numpy.ndarray(shape = (ns,2), dtype = int)
 for i in range(ns):
