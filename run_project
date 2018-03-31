@@ -1,0 +1,9 @@
+#!/bin/bash 
+
+./parallel_offset.py
+./parallel_offset_ext.py
+./process_perimeter.py
+./combine_bathymetry.py
+./triangulate_2.py
+
+
