@@ -7,13 +7,18 @@ import triangle.plot
 
 #---------------------------------------------------------
 # This round of triangulation is designed to extend lake
-# bounds to zero lines and optionally extrude zero lines
-# to enhance printed walls
+# bounds to zero lines, extrude zero lines to enhance printed
+# walls, center and scale coordinates 
 #---------------------------------------------------------
 # Make holes in the place of islands?
 makeHoles = False
 extrudeWalls = True
-
+size = 20
+print "------ Variables -------"
+print "makeHoles =", makeHoles
+print "extrudeWalls =", True
+print "output size =", size
+print "------------------------"
 print "<<< Reading holes >>>"
 # read holes
 holes=[]
@@ -49,7 +54,6 @@ print "... Number of vertices:", n1
 if extrudeWalls:
    # read extruded wall (for printing)
    print "<<< Reading extuded vertices >>>"
-
    file = 'vertices_ext.csv'
    try:
      with open(file) as csvDataFile:
@@ -79,7 +83,7 @@ except IOError:
   print 'Error: file',file,'not found'
   raise SystemExit
 
-# extra wall vertices
+# extrude wall vertices
 print "<<< Extruding outer wall for printing >>>"
 for i in range(n1,ns-1):
    segments.append([i,i+1])
@@ -89,7 +93,7 @@ SEGM = numpy.ndarray(shape = (ns,2), dtype = int)
 for i in range(ns):
    SEGM[i,0] = segments[i][0]; SEGM[i,1] = segments[i][1]; 
 
-print "<<< Constrained conforming Delaunay triangulation >>>"   
+print "<<< Generating meshes >>>"   
 #----------------------------------------------------
 # triangulate
 if makeHoles:
@@ -97,7 +101,7 @@ if makeHoles:
 else:   
    A = dict(vertices=XY, segments=SEGM)
 B = triangle.triangulate(A,'pq10')
-print "done"
+
 # prepare 3D verices by adding z coordinate
 na=len(B['vertices'])
 vrtb = numpy.ndarray(shape = (na,3), dtype = float)
@@ -114,15 +118,23 @@ for i in range(n1,na):
    vrtb[i,1] = vrtt[i,1] = B['vertices'][i][1]
    vrtb[i,2] = vrtt[i,2] = 0.0
    
-# <<<<<<<<<<<<<    Center objects    >>>>>>>>>>>>>>
+# <<<<<<<<<<<<<    Center coordinates    >>>>>>>>>>>>>>
 #----------------------------------------------------------
 print "<<< Centering meshes >>>"
 center = numpy.mean(vrtb, 0)
 center[2]=0.0
-print "... Coordinates of the geometric center:\n","...", center, "\n"
+print "... Coordinates of the geometric center:\n","...", center
 vrtb = vrtb - center
 vrtt = vrtt - center
 HOLES = HOLES - center[[0,1]]
+# <<<<<<<<<<<<<    Scale coordinates    >>>>>>>>>>>>>>
+#----------------------------------------------------------
+xSize=max(vrtb[:,0])-min(vrtb[:,0])
+ySize=max(vrtb[:,1])-min(vrtb[:,1])
+print "... Mesh size:",xSize,"x",ySize
+print "<<< Scaling meshes >>>"
+vrtb *= size/max(xSize,ySize)
+vrtt *= size/max(xSize,ySize)
 
 # the faces (triangles)
 faces = B['triangles']
