@@ -1,38 +1,38 @@
 #!/usr/bin/python 
 
-import shapefile, sys, fiona, csv
+import shapefile, sys, os, fiona, csv
 from shapely.geometry import Point, LineString
 import matplotlib.pyplot as plt
 
-# This script generates a set of polylines  parallel to all input
-# polylines found in the input ESRI shapefile. The lines are generated 
-# at the distance offDist from the input line, inside or outside of the 
-# input polygons. The output is in  ESRI polyline Z format where Z is 
+# This script generates a set of polylines  parallel to the first
+# polyline (L.perimeter) found in the input ESRI shapefile. The lines
+# are generated at the distance offDist from the input line, outside of 
+# input polyline. The output is in  ESRI polyline Z format where Z is 
 # (constant) depth. In addition depth is also saved in the record #1 "Depth".
 
 # Required input:
 #--------------------------------------------------------------
 offDist = 15.0
-#----------------
 Depth = 0.2
 #----------------
-WorkDir = "/home/svassili/OpiniconShp/OpiniconModelBuild/"
-#InputFile = "Initial_Data/opinicon_perimeter_ed.shp"
-InputFile = "TestData/opinicon_perimeter_ed_simpl_0.4-2.shp"
+WorkDir = os.getcwd()+"/"
+InputFile = "Opinicon/Data/opinicon_perimeter_ed_simpl_0.4-3.shp"
 #----------------
 # Offset the following shapes to the right, default is offset left.
 ShapesRight = [0,12,13,25,31,32,33,36,38,39,40,41,42,45,46,47,50,51,52,53,54]
 #----------------
-OutFile = "TestData/Perim_ed_simpl_0.4__10m_ext_offset."
+OutFile = "Opinicon/Output/Perim_ed_simpl_0.4__15m_ext_offset."
 #----------------
 # If parallel offset algorithm crashes try to adjust coordinate shifts
 dX = -200
 dY = -200
 #---------------------------------------------------------------
+VerticesFile = "Opinicon/Output/vertices_ext.csv" 
 InputFile = WorkDir + InputFile
 OutFile = WorkDir + OutFile
+VerticesFile = WorkDir + VerticesFile
 
-print "Reading shapefile"
+print "\n<<< Reading shapefile >>>\n...", os.path.basename(InputFile)
 # Read shoreline points
 sh = shapefile.Reader(InputFile)
 # Shape records
@@ -62,7 +62,7 @@ for i in nShapes:
 # Perimeter parallel offset line
 #----------------------------------------------------------------------------
 # all shapes, left offset is 1, right is 0
-print "Generating parallel offset lines"
+print "<<< Generating parallel offset lines >>>"
 Shapes=[]
 for i in range(0,len(sh_records)):
   Shapes.append(1)
@@ -100,7 +100,7 @@ for j in range(1):
   ml=0;mli=0    
   try:
   # try to process offset line as a list of polylines
-    print  "S" + str(j) + ":",  
+    print  "... S" + str(j) + ":",  
     for i in range(len(list(offsetLine))):
        if offsetLine[i].length > ml:
           ml = offsetLine[i].length
@@ -134,10 +134,12 @@ for j in range(1):
   sys.stdout.flush()
    
 # <<<<<<< Write out vertices  >>>>>>>
-with open('vertices_ext.csv', 'wb') as f:
+print "<<< Writing vertices >>>\n...", os.path.basename(VerticesFile)  
+with open(VerticesFile, 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(vertex)
-  
+    
+print "<<< Writing perimeter offset >>>\n...", os.path.basename(OutFile)+'shp'  
 for s in w.shapes():
   s.shapeType = ShapeType
 w.save(OutFile)
@@ -149,6 +151,6 @@ with fiona.open(InputFile) as fp:
  prj.close()
   
 # plot results
-plt.show()
+#plt.show()
 
 

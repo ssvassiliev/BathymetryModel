@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from stl import mesh
-import csv, math, numpy, sys
+import csv, math, numpy, sys, os
 import triangle
 import triangle.plot
 
@@ -14,22 +14,28 @@ import triangle.plot
 makeHoles = False
 extrudeWalls = True
 size = 20
+WorkDir = os.getcwd()+"/"
+verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
+vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'
+holesFile = WorkDir+'Opinicon/Output/holes.csv'
+segmentsFile = WorkDir+'Opinicon/Output/segments.csv'
+
 print "------ Variables -------"
 print "makeHoles =", makeHoles
 print "extrudeWalls =", True
 print "output size =", size
 print "------------------------"
+
 print "<<< Reading holes >>>"
 # read holes
 holes=[]
-file = 'holes.csv'
 try:
-  with open(file) as csvDataFile:
+  with open(holesFile) as csvDataFile:
     csvReader = csv.reader(csvDataFile)
     for row in csvReader:
       holes.append([float(row[0]),float(row[1])])
 except IOError:
-  print 'Error: file',file,'not found'
+  print 'Error: file',holesFile,'not found'
   raise SystemExit   
 ns=len(holes)
 HOLES = numpy.ndarray(shape = (ns,2), dtype = float)
@@ -39,9 +45,8 @@ for i in range(ns):
 print "<<< Reading vertices >>>"
 # read vertices
 vertices=[]
-file = 'vertices.csv'
 try:
-  with open(file) as csvDataFile:
+  with open(verticesFile) as csvDataFile:
     csvReader = csv.reader(csvDataFile)
     for row in csvReader:
       vertices.append([float(row[0]),float(row[1]),float(row[2])])
@@ -54,9 +59,8 @@ print "... Number of vertices:", n1
 if extrudeWalls:
    # read extruded wall (for printing)
    print "<<< Reading extuded vertices >>>"
-   file = 'vertices_ext.csv'
    try:
-     with open(file) as csvDataFile:
+     with open(vertices_extFile) as csvDataFile:
        csvReader = csv.reader(csvDataFile)
        for row in csvReader:
          vertices.append([float(row[0]),float(row[1]),float(row[2])])
@@ -73,9 +77,8 @@ for i in range(ns):
 # read segments
 print "<<< Reading segments >>>"
 segments=[]
-file = 'segments.csv'
 try:
-  with open(file) as csvDataFile:
+  with open(segmentsFile) as csvDataFile:
     csvReader = csv.reader(csvDataFile)
     for row in csvReader:
       segments.append([int(row[0]),int(row[1])])

@@ -1,6 +1,6 @@
 #!/usr/bin/python	
 
-import shapefile, fiona, csv, math, numpy
+import shapefile, fiona, csv, math, numpy, os
 
 # This script reads depth points from perimeter and perimeter
 # parallel offset files, and combines them in a single shapefile
@@ -8,19 +8,18 @@ import shapefile, fiona, csv, math, numpy
 # the same projection. 
 #-------------------------------------------------------------------
 # Required input:
-WorkDir="/home/svassili/OpiniconShp/OpiniconModelBuild/"
-InputFile1 = "Refined_Data/opinicon_perimeter_ed_simpl_0.4-2.shp"
-InputFile2 = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
-OutFile = "opinicon_perim_&_offset."
+WorkDir = os.getcwd()+"/"
+InputFile1 = "Opinicon/Data/opinicon_perimeter_ed_simpl_0.4-3.shp"
+InputFile2 = "Opinicon/Output/opinicon_offset_ed_simpl_0.4-3.shp"
+OutFile = "Opinicon/Output/opinicon_perim_and_offset-3."
 # Fill gaps between points separated by distance bigger than: 
 space = 5.0;
 # Merge points separated by less than: 
 r = 1.0
-# Maximum allowed spike 
-maxh = 4.0
 #-------------------------------------------------------------------
 InputFile1 = WorkDir + InputFile1
 InputFile2 = WorkDir + InputFile2
+OutFile = WorkDir + OutFile
 x=[]; y=[]; z=[]; depth=[];
 
 # add_points function takes data points from shapefile reader object
@@ -71,19 +70,25 @@ def add_points(bt,x,y,z,ii,ind,spacing):
 ii=0; ind=[]
 ind.append(0)
 try:
-  print "1: Perimeter,",  
-  bt = shapefile.Reader(InputFile1)    
+  print "\n<<< Reading perimeter >>>\n...", os.path.basename(InputFile1)
+  print "<<< Adding points >>>"
+  print "... input perimeter,",  
+  bt = shapefile.Reader(InputFile1)
   x,y,z,ii,ind = add_points(bt,x,y,z,ii,ind,space)
 except:
+  print '\n... Warning: file not found'
   pass
 #------------------------------------------------------
 #       Read perimeter parallel offset
 #------------------------------------------------------
 try:
-  print "2: Perimeter,",  
+  print "\n<<< Reading perimeter offset >>>\n...", os.path.basename(InputFile2)
+  print "<<< Adding points >>>"
+  print "... input perimeter offset,",  
   bt = shapefile.Reader(InputFile2)    
   x,y,z,ii,ind = add_points(bt,x,y,z,ii,ind,space)
 except:
+  print '\n... Warning: file not found'
   pass
 #-------------------------------------------------------
 # write output shapefile and projection
@@ -94,8 +99,8 @@ w=shapefile.Writer(ShapeType)
 w.autobalance=1
 w.field("ID", "F",10,5)
 
-print "Output:"
-print OutFile+"shp,", len(x), "points"
+print "\n<<< Saving perimeter + offset >>>"
+print "...", os.path.basename(OutFile),"\n...", len(x), "points,",
 
 # write as polyline
 vcount=0

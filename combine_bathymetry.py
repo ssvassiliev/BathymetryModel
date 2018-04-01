@@ -10,12 +10,15 @@ import shapefile, fiona, csv, math, numpy, scipy, os, sys
 # the same projection. 
 #-------------------------------------------------------------------
 # Required input:
-WorkDir="/home/svassili/OpiniconShp/OpiniconModelBuild/"
-PerimeterFile = "Refined_Data/opinicon_perim_&_offset_2.shp"
-#PerimeterFile = "Refined_Data/Perim_ed_simpl_0.4__1m_off_0.5m_depth.shp"
-SounderFile1 = "Initial_Data/opinicon_raw_gps_no_duplicates.shp"
-csvFile1 = "Initial_Data/20171021_location.csv"
-OutFile = "opinicon_combined_bathymetry."
+WorkDir = os.getcwd()+"/"
+PerimeterFile = WorkDir+"Opinicon/Output/opinicon_perim_and_offset-3.shp"
+SounderFile1 = WorkDir+"Opinicon/Data/opinicon_raw_gps_no_duplicates.shp"
+csvFile1 = WorkDir+"Opinicon/Data/20171021_location.csv"
+OutFile = WorkDir+"Opinicon/Output/opinicon_combined_bathymetry."
+verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
+vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'
+holesFile = WorkDir+'Opinicon/Output/holes.csv'
+segmentsFile = WorkDir+'Opinicon/Output/segments.csv'
 # z scaling factor.
 # Output z will be multiplied by zmult.
 zmult = 40.0
@@ -25,13 +28,13 @@ r = 1.0
 # Maximum iterrations
 ntries = 20
 # Moving average over a distance 
-n_av = 20.0
+n_av = 10.0
 # Maximum allowed peak height.
 # Positive and negative peaks with h < maxh and width = 1
 # will be replaced by average of z[i-1] and z[i+1]
 maxh = 1.0
 # Triangulation options: http://dzhelil.info/triangle/
-tri = 'pq10'
+tri = 'pq20'
 # Inverse distance interpolation:
 invp = 2  # power
 intn = 10 # number of nearest neighbours 
@@ -41,15 +44,11 @@ print "Moving average distance =", n_av
 print "Maximum allowed peak height =",maxh
 print "Depth scaling factor =",zmult
 #------------------------------------------------------------
-SounderFile1 = WorkDir + SounderFile1
-csvFile1 = WorkDir + csvFile1
-PerimeterFile = WorkDir + PerimeterFile
 x=[]; y=[]; z=[]; depth=[];
 #------------------------------------------------------------
 # <<<<<<<<<<<<<<<<< Read perimeter file >>.>>>>>>>>>>>>>>>>>>
 #------------------------------------------------------------
-file=PerimeterFile
-sh = shapefile.Reader(file)
+sh = shapefile.Reader(PerimeterFile)
 sh_records = sh.shapeRecords()
 sh_shapes = sh.shapes()
 nShapes=range(len(sh_shapes))
@@ -69,13 +68,12 @@ for i in nShapes:
    hx /= n; hy /= n
    holes.append([hx,hy])
    z += sh_shapes[i].z
-print "\n<<< Reading perimeter >>>\n", os.path.basename(file)+",", len(x), "points"
+print "\n<<< Reading perimeter >>>\n", os.path.basename(PerimeterFile)+",", len(x), "points"
 print "min =", min(z), "max = ", max(z), "\n"
 #------------------------------------------------------------
 # <<<<<<<<<<<<<<<< Read raw sounder data: >>>>>>>>>>>>>>>>>> 
 #------------------------------------------------------------
-file=SounderFile1
-bt = shapefile.Reader(file)
+bt = shapefile.Reader(SounderFile1)
 bt_records = bt.shapeRecords()
 bt_shapes = bt.shapes()
 # depth is record #3 in the "opinicon_raw_gps"
@@ -94,21 +92,21 @@ for i in range(ni):
   del xt[i1]; del yt[i1]; del zt[i1]
 #---------------------------------------
 
-print "<<< Reading sounder data >>>\n", os.path.basename(file)+",", len(xt),"points\n" 
+print "<<< Reading sounder data >>>\n", os.path.basename(SounderFile1)+",", len(xt),"points\n" 
 # Find and delete outliers
 print "<<< Removing outliers >>>"
 # print '{0:6} {1:8} {2:6}'.format("     #","     ID","Height+ " "Height-")
 c=0
 for i in range(1,len(xt)-1):
    # spikes
-    h = min(zt[i]-zt[i-1], zt[i]-zt[i+1])
+    h = min(zt[i] - zt[i-1], zt[i] - zt[i+1])
    # dips
-    g = min(-zt[i]+zt[i-1], -zt[i]+zt[i+1])   
+    g = min(-zt[i] + zt[i-1], -zt[i] + zt[i+1])   
     if h > maxh or g > maxh:
         c+=1
 #        print '{0:6} {1:8} {2:7} {3:7}'.format(c,i,h,g)
         x2.append(xt[i]); y2.append(yt[i]);
-        z2.append((zt[i+1]+zt[i-1])*0.5)    
+        z2.append((zt[i+1] + zt[i-1])*0.5)    
     else:
         x2.append(xt[i]); y2.append(yt[i]); z2.append(zt[i])
 print "... removed",c,"outliers" 
@@ -149,20 +147,18 @@ x += x2[:]; y += y2[:]; z += z2[:]
 #--------------------------------------------------------
 # <<<<<<< Read depth measurements from csv file >>>>>>>>>
 #--------------------------------------------------------
-file = csvFile1
 try:
-  with open(file) as csvDataFile:
+  with open(csvFile1) as csvDataFile:
     csvReader = csv.reader(csvDataFile)
     next(csvReader, None)
     for row in csvReader:
       x.append(float(row[3]))
       y.append(float(row[4]))
       z.append(-float(row[8]))
-  print "\n<<< Reading CSV table>>>\n", os.path.basename(file)+",",\
+  print "\n<<< Reading CSV table>>>\n", os.path.basename(csvFile1)+",",\
    int(csvReader.line_num)-1,"depth points\n"
 except IOError:
   pass
-
 
 #------------------------------------------------------------
 #<<<<<<<<<<<<<<< Add bounding box >>>>>>>>>>>>>>>>>>>
@@ -269,7 +265,7 @@ top_msh.save('top_mesh_.stl')
 
 #----------------------------------------------------
 # <<<<<<< Write out vertices, segments, holes >>>>>>>
-with open('vertices.csv', 'wb') as f:
+with open(verticesFile, 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(vrtb)
 segments=[]
@@ -291,10 +287,10 @@ SEGM2 = numpy.ndarray(shape = (ns,2), dtype = int)
 for i in range(ns):
    SEGM2[i,0] = segments[i][0]; SEGM2[i,1] = segments[i][1]; 
     
-with open('segments.csv', 'wb') as f:
+with open(segmentsFile, 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(SEGM2)
-with open('holes.csv', 'wb') as f:
+with open(holesFile, 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(HOLES)
     

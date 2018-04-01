@@ -28,7 +28,7 @@ dY = -100
 #---------------------------------------------------------------
 InputFile = WorkDir + InputFile
 OutFile = WorkDir + OutFile
-print "\n<<< Reading shapefile >>>\n...", os.path.basename(InputFile)
+print "\n<<< Reading perimeter >>>\n...", os.path.basename(InputFile)
 # Read shoreline points
 sh = shapefile.Reader(InputFile)
 # Shape records
@@ -120,6 +120,7 @@ for j in range(0,len(sh_records)):
 #  print ""  
   sys.stdout.flush()
 
+print "\n<<< Writing perimeter offset >>>\n...", os.path.basename(OutFile)+'shp'  
 for s in w.shapes():
   s.shapeType = ShapeType
 w.save(OutFile)
