@@ -1,7 +1,7 @@
 #!/usr/bin/python	
 
 import shapefile, fiona, csv, math, numpy, os
-
+print "\n*********** Process perimeter ************"
 # This script reads depth points from perimeter and perimeter
 # parallel offset files, and combines them in a single shapefile
 # filling gaps in straight line segments. Both files should be in
@@ -70,7 +70,7 @@ def add_points(bt,x,y,z,ii,ind,spacing):
 ii=0; ind=[]
 ind.append(0)
 try:
-  print "\n<<< Reading perimeter >>>\n...", os.path.basename(InputFile1)
+  print "<<< Reading perimeter >>>\n...", os.path.basename(InputFile1)
   print "<<< Adding points >>>"
   print "... input perimeter,",  
   bt = shapefile.Reader(InputFile1)
@@ -82,7 +82,7 @@ except:
 #       Read perimeter parallel offset
 #------------------------------------------------------
 try:
-  print "\n<<< Reading perimeter offset >>>\n...", os.path.basename(InputFile2)
+  print "<<< Reading perimeter offset >>>\n...", os.path.basename(InputFile2)
   print "<<< Adding points >>>"
   print "... input perimeter offset,",  
   bt = shapefile.Reader(InputFile2)    
@@ -99,7 +99,7 @@ w=shapefile.Writer(ShapeType)
 w.autobalance=1
 w.field("ID", "F",10,5)
 
-print "\n<<< Saving perimeter + offset >>>"
+print "<<< Saving perimeter + offset >>>"
 print "...", os.path.basename(OutFile),"\n...", len(x), "points,",
 
 # write as polyline

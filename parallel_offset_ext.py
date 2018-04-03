@@ -3,7 +3,7 @@
 import shapefile, sys, os, fiona, csv
 from shapely.geometry import Point, LineString
 import matplotlib.pyplot as plt
-
+print "\n************* Parallel offset exterior **************"
 # This script generates a set of polylines  parallel to the first
 # polyline (L.perimeter) found in the input ESRI shapefile. The lines
 # are generated at the distance offDist from the input line, outside of 
@@ -32,7 +32,7 @@ InputFile = WorkDir + InputFile
 OutFile = WorkDir + OutFile
 VerticesFile = WorkDir + VerticesFile
 
-print "\n<<< Reading shapefile >>>\n...", os.path.basename(InputFile)
+print "<<< Reading shapefile >>>\n...", os.path.basename(InputFile)
 # Read shoreline points
 sh = shapefile.Reader(InputFile)
 # Shape records

@@ -4,6 +4,7 @@ import shapefile, sys, os, fiona
 from shapely.geometry import Point, LineString
 import matplotlib.pyplot as plt
 
+print "\n***************** Parallel offset *****************"
 # This script generates a set of polylines  parallel to all input
 # polylines found in the input ESRI shapefile. The lines are generated 
 # at the distance offDist from the input line, inside or outside of the 
@@ -28,7 +29,7 @@ dY = -100
 #---------------------------------------------------------------
 InputFile = WorkDir + InputFile
 OutFile = WorkDir + OutFile
-print "\n<<< Reading perimeter >>>\n...", os.path.basename(InputFile)
+print "<<< Reading perimeter >>>\n...", os.path.basename(InputFile)
 # Read shoreline points
 sh = shapefile.Reader(InputFile)
 # Shape records
@@ -73,13 +74,15 @@ w.field("Depth", "F",10,5)
 
 # Compute offset for the following records
 #-----------------------------------------
-for j in range(0,len(sh_records)):
+dist=0
+for j in range(len(sh_records)):
   xf=[]; yf=[]; p=[]
 # prepare shapely polyline from the list of coordinates
   for i in range(ind[j],ind[j+1]):
        p.append(Point(xt[i],yt[i]))
        xf.append(xt[i]); yf.append(yt[i])
   line=LineString(p)
+  dist += line.length
 # generate parallel offset. 1 - interior offset; 0 - exterior offset
   if Shapes[j] == 1:  
     try:
@@ -120,7 +123,8 @@ for j in range(0,len(sh_records)):
 #  print ""  
   sys.stdout.flush()
 
-print "\n<<< Writing perimeter offset >>>\n...", os.path.basename(OutFile)+'shp'  
+print "\n<<< Writing perimeter offset >>>\n...", os.path.basename(OutFile)+'shp'
+print "... perimeter including islands =",dist,"m"
 for s in w.shapes():
   s.shapeType = ShapeType
 w.save(OutFile)

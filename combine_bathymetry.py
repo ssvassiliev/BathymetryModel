@@ -4,7 +4,7 @@ from scipy.spatial.distance import cdist
 from mergepoints import merge_points, sqdistance
 from stl import mesh
 import shapefile, fiona, csv, math, numpy, scipy, os, sys
-
+print "\n************* Combine bathymetry **************"
 # This script reads depth points from csv and shape files, and 
 # combines them in a single shapefile. All files should be in
 # the same projection. 
@@ -39,10 +39,10 @@ tri = 'pq20'
 invp = 2  # power
 intn = 10 # number of nearest neighbours 
 
-print "\nMinimal allowed points separation =", r
-print "Moving average distance =", n_av
-print "Maximum allowed peak height =",maxh
-print "Depth scaling factor =",zmult
+print "... Minimal allowed points separation =", r
+print "... Moving average distance =", n_av
+print "... Maximum allowed peak height =",maxh
+print "... Depth scaling factor =",zmult
 #------------------------------------------------------------
 x=[]; y=[]; z=[]; depth=[];
 #------------------------------------------------------------
@@ -68,8 +68,8 @@ for i in nShapes:
    hx /= n; hy /= n
    holes.append([hx,hy])
    z += sh_shapes[i].z
-print "\n<<< Reading perimeter >>>\n", os.path.basename(PerimeterFile)+",", len(x), "points"
-print "min =", min(z), "max = ", max(z), "\n"
+print "<<< Reading perimeter >>>\n...", os.path.basename(PerimeterFile)+",", len(x), "points"
+print "... min =", min(z), "max = ", max(z)
 #------------------------------------------------------------
 # <<<<<<<<<<<<<<<< Read raw sounder data: >>>>>>>>>>>>>>>>>> 
 #------------------------------------------------------------
@@ -92,7 +92,7 @@ for i in range(ni):
   del xt[i1]; del yt[i1]; del zt[i1]
 #---------------------------------------
 
-print "<<< Reading sounder data >>>\n", os.path.basename(SounderFile1)+",", len(xt),"points\n" 
+print "<<< Reading sounder data >>>\n...", os.path.basename(SounderFile1)+",", len(xt),"points" 
 # Find and delete outliers
 print "<<< Removing outliers >>>"
 # print '{0:6} {1:8} {2:6}'.format("     #","     ID","Height+ " "Height-")
@@ -111,7 +111,7 @@ for i in range(1,len(xt)-1):
         x2.append(xt[i]); y2.append(yt[i]); z2.append(zt[i])
 print "... removed",c,"outliers" 
 # Moving average over a distance n_av
-print "\n<<< Computing moving average >>>" 
+print "<<< Computing moving average >>>" 
 n_av *= n_av
 for i in range(len(x2)):
    j=1;k=0
@@ -131,7 +131,7 @@ for i in range(len(x2)):
       break
       
 # Merge closely spaced data points
-print "\n<<< Merging closely spaced data points >>>"
+print "<<< Merging closely spaced data points >>>"
 count=0
 while True:
   try:
@@ -155,8 +155,8 @@ try:
       x.append(float(row[3]))
       y.append(float(row[4]))
       z.append(-float(row[8]))
-  print "\n<<< Reading CSV table>>>\n", os.path.basename(csvFile1)+",",\
-   int(csvReader.line_num)-1,"depth points\n"
+  print "<<< Reading CSV table>>>\n...", os.path.basename(csvFile1)+",",\
+   int(csvReader.line_num)-1,"depth points"
 except IOError:
   pass
 
@@ -175,7 +175,7 @@ except IOError:
 #---------------------------------------------------------
 import triangle
 import triangle.plot
-print "<<< Constrained conforming Delaunay triangulation >>>\n"   
+print "<<< Constrained conforming Delaunay triangulation >>>"   
 # segments from offset lines
 nPoly=len(nShapes)/2
 # offset line segments: 
@@ -211,7 +211,7 @@ B = triangle.triangulate(A,tri)
 ns=len(x)
 na = len(B['vertices'])
 
-# declare arrays for vertices
+# allocate arrays for vertices
 vrtb = numpy.ndarray(shape = (na,3), dtype = float)
 vrtt = numpy.ndarray(shape = (na,3), dtype = float)
 rpt = numpy.ndarray(shape = (1,2), dtype = float)
@@ -221,9 +221,9 @@ for i in range(ns):
    vrtt[i,0] = x[i]; vrtt[i,1] = y[i]; vrtt[i,2] = 0.0;  # top surface
    
 # Interpolate depth of the new points using inverse distance algorithm       
-print "<<< Inverse distance interpolation >>>"
+print "<<< Inverse distance weighting >>>"
 print "... interpolating depth of", na-ns, "vertices ..."
-print "... this may take a while ...\n"
+print "... this may take a while ..."
 
 for j in range(ns,na):
    # the new vertices
@@ -303,8 +303,7 @@ ShapeType=shapefile.POINTZ
 w=shapefile.Writer(ShapeType)
 w.autobalance=1
 w.field("ID", "F",10,5)
-print "<<< Output >>>"
-print OutFile+"shp,", len(x), "points"
+print "<<< Output >>>\n...", os.path.basename(OutFile)+"shp,", len(x), "points"
 # write as points
 pcount=0
 for i in range(len(x)):
@@ -319,7 +318,6 @@ with fiona.open(PerimeterFile) as fp:
   prj=open(OutFile+"prj","w")
   prj.write(fp.crs_wkt)
   prj.close()
-
 #import matplotlib.pyplot as plt
 #triangle.plot.compare(plt, A, B)
 #plt.show()

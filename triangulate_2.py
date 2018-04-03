@@ -4,7 +4,7 @@ from stl import mesh
 import csv, math, numpy, sys, os
 import triangle
 import triangle.plot
-
+print "\n************** Triangulate 2 ***************"
 #---------------------------------------------------------
 # This round of triangulation is designed to extend lake
 # bounds to zero lines, extrude zero lines to enhance printed
