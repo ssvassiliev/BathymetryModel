@@ -10,10 +10,11 @@ print "\n************** Triangulate 2 ***************"
 # bounds to zero lines, extrude zero lines to enhance printed
 # walls, center and scale coordinates 
 #---------------------------------------------------------
-# Make holes in the place of islands?
-makeHoles = False
-extrudeWalls = True
-size = 20
+# Make holes in place of the islands?
+makeHoles = True
+extrudeWalls = False
+# Size of the largest mesh dimension
+size = 20 
 WorkDir = os.getcwd()+"/"
 verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
 vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'

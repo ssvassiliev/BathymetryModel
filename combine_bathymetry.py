@@ -1,6 +1,8 @@
 #!/usr/bin/python
-import scipy, numpy
-from scipy.spatial.distance import cdist  
+
+from pyproj import Proj, transform
+import scipy, numpy, pandas
+from scipy.spatial.distance import cdist
 from mergepoints import merge_points, sqdistance
 from stl import mesh
 import shapefile, fiona, csv, math, numpy, scipy, os, sys
@@ -14,6 +16,7 @@ WorkDir = os.getcwd()+"/"
 PerimeterFile = WorkDir+"Opinicon/Output/opinicon_perim_and_offset-3.shp"
 SounderFile1 = WorkDir+"Opinicon/Data/opinicon_raw_gps_no_duplicates.shp"
 csvFile1 = WorkDir+"Opinicon/Data/20171021_location.csv"
+xlFile1= WorkDir+"Opinicon/Data/L.opinicon-04-2018.xlsx"
 OutFile = WorkDir+"Opinicon/Output/opinicon_combined_bathymetry."
 verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
 vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'
@@ -144,6 +147,7 @@ while True:
   except TypeError:
     break
 x += x2[:]; y += y2[:]; z += z2[:]
+
 #--------------------------------------------------------
 # <<<<<<< Read depth measurements from csv file >>>>>>>>>
 #--------------------------------------------------------
@@ -160,6 +164,31 @@ try:
 except IOError:
   pass
 
+#--------------------------------------------------------
+# <<<<<<< Read depth measurements from excel file >>>>>>>>>
+#--------------------------------------------------------
+# Projections:
+wgs84 = Proj('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')##4326
+epsg26918 = Proj(init='epsg:26918')
+
+try:
+    count=0
+    wb = pandas.read_excel(xlFile1)
+    t0=list(wb[' longitude'])
+    t1=list(wb[' latitude'])
+    t2=list(wb['water.depth'])
+    xt,yt,zt=transform(wgs84,epsg26918,t0,t1,t2,radians=False)
+    n=len(xt)
+    for i in range(n):
+          x.append(float(xt[i]))
+          y.append(float(yt[i]))
+          z.append(-float(zt[i]))
+          count+=1
+    print "<<< Reading excel table>>>\n...", os.path.basename(xlFile1)+",",\
+      count,"depth points"
+except IOError:
+    pass
+ 
 #------------------------------------------------------------
 #<<<<<<<<<<<<<<< Add bounding box >>>>>>>>>>>>>>>>>>>
 #marg=100
