@@ -4,6 +4,7 @@ from pyproj import Proj, transform
 import scipy, numpy, pandas
 from scipy.spatial.distance import cdist
 from mergepoints import merge_points, sqdistance
+from orient import principal_axes, rotate_coord
 from stl import mesh
 import shapefile, fiona, csv, math, numpy, scipy, os, sys
 print "\n************* Combine bathymetry **************"
@@ -276,6 +277,12 @@ for j in range(ns,na):
    
 # the faces (triangles)
 faces = B['triangles']
+
+# align with principal axes
+center,Rot = principal_axes(vrtb,2)
+vrtb = rotate_coord(vrtb,center,Rot)
+vrtt = rotate_coord(vrtt,center,Rot)  
+HOLES = rotate_coord(HOLES,center,Rot)
 
 # <<<<<<<<< Create meshes >>>>>>>>>>
 #-------------------------------------------------------------
