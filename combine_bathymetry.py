@@ -23,25 +23,25 @@ verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
 vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'
 holesFile = WorkDir+'Opinicon/Output/holes.csv'
 segmentsFile = WorkDir+'Opinicon/Output/segments.csv'
-# z scaling factor.
-# Output z will be multiplied by zmult.
+#---- z scaling factor, output will be multiplied by zmult.
 zmult = 40.0
-# Minimal allowed points separation.
-# Points separated by less than r will be merged. 
+#----- Minimal allowed points separation, points separated by less than r will be merged. 
 r = 1.0
-# Maximum iterrations
+#----- Maximum merging iterrations
 ntries = 20
-# Moving average over a distance 
+#----- Moving average distance 
 n_av = 10.0
-# Maximum allowed peak height.
+#----- Maximum allowed peak height.
 # Positive and negative peaks with h < maxh and width = 1
 # will be replaced by average of z[i-1] and z[i+1]
 maxh = 1.0
-# Triangulation options: http://dzhelil.info/triangle/
+#----- Triangulation options: http://dzhelil.info/triangle/
 tri = 'pq20'
-# Inverse distance interpolation:
+#----- Inverse distance interpolation:
 invp = 2  # power
 intn = 10 # number of nearest neighbours 
+#----- Flip coordinates for 3D printing
+flip = True
 
 print "... Minimal allowed points separation =", r
 print "... Moving average distance =", n_av
@@ -232,6 +232,15 @@ HOLES = numpy.ndarray(shape = (ns,2), dtype = float)
 for i in range(ns):
    HOLES[i,0] = holes[i][0]; HOLES[i,1] = holes[i][1]; 
 
+if flip == True:
+   center = numpy.mean(XY_S, 0)
+   Rot = numpy.ndarray(shape = (3,3), dtype = float)
+   Rot[0]=[-1,0,0]
+   Rot[1]=[ 0,1,0]
+   Rot[2]=[ 0,0,1]
+   XY_S=rotate_coord(XY_S,center,Rot)
+   HOLES=rotate_coord(HOLES,center,Rot)
+
 A = dict(vertices=XY_S, segments=SEGM, holes=HOLES)
 B = triangle.triangulate(A,tri)
 
@@ -245,11 +254,12 @@ na = len(B['vertices'])
 vrtb = numpy.ndarray(shape = (na,3), dtype = float)
 vrtt = numpy.ndarray(shape = (na,3), dtype = float)
 rpt = numpy.ndarray(shape = (1,2), dtype = float)
+
 # fill arrays with existing data 
 for i in range(ns):
-   vrtb[i,0] = x[i]; vrtb[i,1] = y[i]; vrtb[i,2] = z[i]*zmult; # bottom surface
-   vrtt[i,0] = x[i]; vrtt[i,1] = y[i]; vrtt[i,2] = 0.0;  # top surface
-   
+      vrtb[i,0] = XY_S[i,0]; vrtb[i,1] = XY_S[i,1];vrtb[i,2] = z[i]*zmult; # bottom surface
+      vrtt[i,0] = XY_S[i,0]; vrtt[i,1] = XY_S[i,1]; vrtt[i,2] = 0.0;  # top surface
+
 # Interpolate depth of the new points using inverse distance algorithm       
 print "<<< Inverse distance weighting >>>"
 print "... interpolating depth of", na-ns, "vertices ..."
@@ -274,7 +284,11 @@ for j in range(ns,na):
         vrtb[j,2] = mu*zmult/sm
    else:
         vrtb[j,2] = 0.0
-   
+
+if flip == True:
+   for j in range(na):
+      vrtb[j,2] *= -1
+
 # the faces (triangles)
 faces = B['triangles']
 

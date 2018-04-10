@@ -2,6 +2,7 @@
 
 from stl import mesh
 import csv, math, numpy, sys, os
+from orient import principal_axes, rotate_coord
 import triangle
 import triangle.plot
 print "\n************** Triangulate 2 ***************"
@@ -122,15 +123,27 @@ for i in range(n1,na):
    vrtb[i,1] = vrtt[i,1] = B['vertices'][i][1]
    vrtb[i,2] = vrtt[i,2] = 0.0
    
-# <<<<<<<<<<<<<    Center coordinates    >>>>>>>>>>>>>>
+# <<<<<<<<<<<<<    Transforming coordinates    >>>>>>>>>>>>>>
 #----------------------------------------------------------
-print "<<< Centering meshes >>>"
-center = numpy.mean(vrtb, 0)
-center[2]=0.0
-print "... Coordinates of the geometric center:\n","...", center
-vrtb = vrtb - center
-vrtt = vrtt - center
-HOLES = HOLES - center[[0,1]]
+#print "<<< Transforming meshes >>>"
+#center = numpy.mean(vrtb, 0)
+#center[2]=0.0
+
+#Rot = numpy.ndarray(shape = (3,3), dtype = float)
+#Rot[0]=[-1,0,0]
+#Rot[1]=[0,1,0]
+#Rot[2]=[0,0,-1]
+
+#vrtb=rotate_coord(vrtb,center,Rot)
+#vrtt=rotate_coord(vrtt,center,Rot)
+#HOLES=rotate_coord(HOLES,center,Rot)
+
+
+#print "... Coordinates of the geometric center:\n","...", center
+#print "... Rotation matrix:\n", Rot
+#vrtb = vrtb - center
+#vrtt = vrtt - center
+#HOLES = HOLES - center[[0,1]]
 # <<<<<<<<<<<<<    Scale coordinates    >>>>>>>>>>>>>>
 #----------------------------------------------------------
 xSize=max(vrtb[:,0])-min(vrtb[:,0])
