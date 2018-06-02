@@ -7,10 +7,14 @@ from mergepoints import merge_points, sqdistance
 from orient import principal_axes, rotate_coord
 from stl import mesh
 import shapefile, fiona, csv, math, numpy, scipy, os, sys
+from progressbar import ProgressBar
+pbar = ProgressBar()
+
 print "\n************* Combine bathymetry **************"
 # This script reads depth points from csv and shape files, and 
 # combines them in a single shapefile. All files should be in
 # the same projection. 
+# For 3D printer: flip = True, align = True
 #-------------------------------------------------------------------
 # Required input:
 WorkDir = os.getcwd()+"/"
@@ -23,8 +27,10 @@ verticesFile = WorkDir+'Opinicon/Output/vertices.csv'
 vertices_extFile = WorkDir+'Opinicon/Output/vertices_ext.csv'
 holesFile = WorkDir+'Opinicon/Output/holes.csv'
 segmentsFile = WorkDir+'Opinicon/Output/segments.csv'
+facesFile = WorkDir+'Opinicon/Output/faces.csv'
+
 #---- z scaling factor, output will be multiplied by zmult.
-zmult = 40.0
+zmult = 1.0
 #----- Minimal allowed points separation, points separated by less than r will be merged. 
 r = 1.0
 #----- Maximum merging iterrations
@@ -41,12 +47,23 @@ tri = 'pq20'
 invp = 2  # power
 intn = 10 # number of nearest neighbours 
 #----- Flip coordinates for 3D printing
-flip = True
+flip = False
+#----- Align with principal axes
+align = False
+#----- Invert depth (*= -1)
+invd = True
 
 print "... Minimal allowed points separation =", r
 print "... Moving average distance =", n_av
 print "... Maximum allowed peak height =",maxh
 print "... Depth scaling factor =",zmult
+print "... Flip coordinates =",flip
+print "... Align with principal =",align
+print "... Invert depth =",invd
+print "... IDW power =",invp
+print "... IDW neighbours =",intn
+print "... Triangulation options =",tri
+
 #------------------------------------------------------------
 x=[]; y=[]; z=[]; depth=[];
 #------------------------------------------------------------
@@ -263,9 +280,8 @@ for i in range(ns):
 # Interpolate depth of the new points using inverse distance algorithm       
 print "<<< Inverse distance weighting >>>"
 print "... interpolating depth of", na-ns, "vertices ..."
-print "... this may take a while ..."
 
-for j in range(ns,na):
+for j in pbar(range(ns,na)):
    # the new vertices
    vrtb[j,0] = vrtt[j,0] = B['vertices'][j][0];   
    vrtb[j,1] = vrtt[j,1] = B['vertices'][j][1];
@@ -285,18 +301,24 @@ for j in range(ns,na):
    else:
         vrtb[j,2] = 0.0
 
+
 if flip == True:
    for j in range(na):
       vrtb[j,2] *= -1
 
+if invd == True:
+    for j in range(na):
+      vrtb[j,2] *= -1
+    
 # the faces (triangles)
 faces = B['triangles']
 
 # align with principal axes
-center,Rot = principal_axes(vrtb,2)
-vrtb = rotate_coord(vrtb,center,Rot)
-vrtt = rotate_coord(vrtt,center,Rot)  
-HOLES = rotate_coord(HOLES,center,Rot)
+if align == True:
+   center,Rot = principal_axes(vrtb,2)
+   vrtb = rotate_coord(vrtb,center,Rot)
+   vrtt = rotate_coord(vrtt,center,Rot)  
+   HOLES = rotate_coord(HOLES,center,Rot)
 
 # <<<<<<<<< Create meshes >>>>>>>>>>
 #-------------------------------------------------------------
@@ -343,8 +365,10 @@ with open(segmentsFile, 'wb') as f:
 with open(holesFile, 'wb') as f:
     writer = csv.writer(f)
     writer.writerows(HOLES)
-    
-    
+with open(facesFile, 'wb') as f:
+    writer = csv.writer(f)
+    writer.writerows(faces)
+        
 #----------------------------------------------------------
 # <<<<<<<< Write output shapefile and projection >>>>>>>>>>
 #----------------------------------------------------------
