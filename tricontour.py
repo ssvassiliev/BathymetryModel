@@ -52,10 +52,9 @@ print "... Number of triangles:", n1
 plt.figure()
 plt.rcParams['axes.facecolor'] = 'darkgoldenrod'
 plt.gca().set_aspect('equal')
-#plt.axis('scaled')
 plt.tricontourf(x, y, triangles, z, 80, cmap=cm.ocean)
 plt.colorbar()
-plt.title('Interpolated eDNA concentration')
+plt.title('L.Opinicon bathymetry')
 plt.xlabel('Easting')
 plt.ylabel('Northing')
 # Set x,y limits or comment out to draw the whole map 
