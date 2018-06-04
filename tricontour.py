@@ -50,20 +50,22 @@ n1=len(triangles)
 print "... Number of triangles:", n1
 
 plt.figure()
-plt.rcParams['axes.facecolor'] = 'darkgoldenrod'
+plt.rcParams['axes.facecolor'] = 'darkolivegreen'
 plt.gca().set_aspect('equal')
-plt.tricontourf(x, y, triangles, z, 80, cmap=cm.ocean)
+plt.tricontourf(x, y, triangles, z, 80, cmap=cm.CMRmap)
 plt.colorbar()
+plt.grid(c='k', ls='-', alpha=0.3)
+plt.minorticks_on()
 plt.title('L.Opinicon bathymetry')
 plt.xlabel('Easting')
 plt.ylabel('Northing')
 # Set x,y limits or comment out to draw the whole map 
-#plt.xlim(394600,395700) 
-#plt.ylim(4934400,4935500)
+plt.xlim(394800,395800) 
+plt.ylim(4934500,4935500)
 #plt.xlim(391320, 395935)
 #plt.ylim(4931861, 4936171)
 plt.tight_layout()
-plt.savefig('figure.png', dpi = 600)
+plt.savefig('opinicon_bathymetry.png', dpi = 600)
 # Interactive plot
 plt.show()
 
