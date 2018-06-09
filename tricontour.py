@@ -50,12 +50,13 @@ n1=len(triangles)
 print "... Number of triangles:", n1
 
 plt.figure()
-plt.rcParams['axes.facecolor'] = 'black'
+plt.rcParams['axes.facecolor'] = 'brown'
 plt.gca().set_aspect('equal')
-plt.tricontour(x, y, triangles, z, 24, cmap=cm.ocean, linewidths=1)
-#plt.tricontourf(x, y, triangles, z, 80, cmap=cm.CMRmap)
-#plt.colorbar()
-plt.grid(c='k', ls='-', alpha=0.3)
+#plt.tricontour(x, y, triangles, z, 24, cmap=cm.ocean, linewidths=1)
+plt.tricontourf(x, y, triangles, z, 80, cmap=cm.ocean)
+c1=plt.colorbar()
+c1.set_label('Depth, m')
+plt.grid(c='y', ls='-', alpha=0.3)
 plt.minorticks_on()
 plt.title('L.Opinicon bathymetry')
 plt.xlabel('Easting')
