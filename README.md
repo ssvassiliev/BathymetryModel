@@ -1,6 +1,7 @@
 # Create 3D model from bathymetry data and zero lines
 This is a set of scripts performing data cleanup, interpolation, and  quality mesh generation. Meshes are saved in STL format. Explore example 3D model at Sketchfab: https://skfb.ly/6yprL <br><br>
-![L.Opinicon bathymetry]('Fig_readme.png')
+![L.Opinicon depth map.](Fig_readme.png)
+
 
 ## Workflow:
 
