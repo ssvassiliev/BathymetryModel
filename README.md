@@ -1,5 +1,5 @@
 # Create 3D model from bathymetry data and zero lines
-This is a set of scripts performing data cleanup, interpolation, and mesh generation. Meshes are saved in STL format. See example at Sketchfab: https://skfb.ly/6yprL
+This is a set of scripts performing data cleanup, interpolation, and  quality mesh generation. Meshes are saved in STL format. Explore example 3D model at Sketchfab: https://skfb.ly/6yprL
 
 ## Workflow:
 
