@@ -1,6 +1,8 @@
 # Create 3D model from bathymetry data and zero lines
 This is a set of scripts performing data cleanup, interpolation, and mesh generation. Meshes are saved in STL format.
 
+Example: https://skfb.ly/6yprL
+
 ## Workflow:
 
 ### Before you start building model ### 
