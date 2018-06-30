@@ -24,10 +24,9 @@ try:
       x.append(float(row[0]))
       y.append(float(row[1]))
       z.append(float(row[2]))
-
 except IOError:
-  print 'Error: file',file,'not found'
-  raise SystemExit
+    print 'Error: file',file,'not found'
+    raise SystemExit
 n1=len(x)
 print "... Number of vertices:", n1
 
@@ -38,14 +37,13 @@ print "<<< Reading triangles >>>"
 # read triangles
 triangles=[]
 try:
-  with open(facesFile) as csvDataFile:
-    csvReader = csv.reader(csvDataFile)
-    for row in csvReader:
-        triangles.append([int(row[0]),int(row[1]),int(row[2])])
-
+    with open(facesFile) as csvDataFile:
+        csvReader = csv.reader(csvDataFile)
+        for row in csvReader:
+            triangles.append([int(row[0]),int(row[1]),int(row[2])])
 except IOError:
-  print 'Error: file',file,'not found'
-  raise SystemExit
+      print 'Error: file',file,'not found'
+      raise SystemExit
 n1=len(triangles)
 print "... Number of triangles:", n1
 
@@ -68,8 +66,15 @@ plt.ylabel('Northing')
 #plt.ylim(4931861, 4936171)
 plt.tight_layout()
 plt.savefig('opinicon_bathymetry.png', dpi = 600)
+
+plt.figure()
+plt.rcParams['axes.facecolor'] = 'white'
+plt.gca().set_aspect('equal')
+plt.triplot(x, y, triangles, lw=0.5, color='black')
 # Interactive plot
 plt.show()
+
+
 
 
 
